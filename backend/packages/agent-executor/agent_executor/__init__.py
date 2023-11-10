@@ -57,7 +57,7 @@ def _create_function_message(
         try:
             content = json.dumps(observation, ensure_ascii=False)
         except Exception:
-            content = str(observation)
+            content = observation
     else:
         content = observation
     return FunctionMessage(
@@ -150,13 +150,10 @@ class AgentExecutor(RunnableSerializable):
     def _should_continue(self, iterations: int, time_elapsed: float) -> bool:
         if self.max_iterations is not None and iterations >= self.max_iterations:
             return False
-        if (
-            self.max_execution_time is not None
-            and time_elapsed >= self.max_execution_time
-        ):
-            return False
-
-        return True
+        return (
+            self.max_execution_time is None
+            or time_elapsed < self.max_execution_time
+        )
 
     @property
     def name_to_tool_map(self) -> Dict[str, BaseTool]:
@@ -175,10 +172,10 @@ class AgentExecutor(RunnableSerializable):
         """Check if the tool is a returning tool."""
         agent_action, observation = next_step_output
         name_to_tool_map = {tool.name: tool for tool in self.tools}
-        return_value_key = "output"
         # Invalid tools won't be in the map, so we return False.
         if agent_action.tool in name_to_tool_map:
             if name_to_tool_map[agent_action.tool].return_direct:
+                return_value_key = "output"
                 return AgentFinish(
                     {return_value_key: observation},
                     "",
@@ -331,13 +328,12 @@ class AgentExecutor(RunnableSerializable):
     def _consume_next_step(
         self, values: NextStepOutput
     ) -> Union[AgentFinish, List[Tuple[AgentAction, str]]]:
-        if isinstance(values[-1], AgentFinish):
-            assert len(values) == 1
-            return values[-1]
-        else:
+        if not isinstance(values[-1], AgentFinish):
             return [
                 (a.action, a.observation) for a in values if isinstance(a, AgentStep)
             ]
+        assert len(values) == 1
+        return values[-1]
 
     async def _areturn(
         self,

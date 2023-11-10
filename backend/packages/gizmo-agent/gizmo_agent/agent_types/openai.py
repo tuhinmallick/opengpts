@@ -7,16 +7,15 @@ from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 
 
 def get_openai_function_agent(tools, system_message, gpt_4: bool = False, azure: bool = False):
-    if not azure:
-        if gpt_4:
-            llm = ChatOpenAI(model="gpt-4", temperature=0)
-        else:
-            llm = ChatOpenAI(temperature=0)
-    else:
+    if azure:
         llm = AzureChatOpenAI(
             temperature=0,
             deployment_name=os.environ["OPENAI_DEPLOYMENT_NAME"],
         )
+    elif gpt_4:
+        llm = ChatOpenAI(model="gpt-4", temperature=0)
+    else:
+        llm = ChatOpenAI(temperature=0)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_message),
@@ -30,7 +29,7 @@ def get_openai_function_agent(tools, system_message, gpt_4: bool = False, azure:
         )
     else:
         llm_with_tools = llm
-    agent = (
+    return (
         {
             "messages": lambda x: x["messages"],
             "agent_scratchpad": lambda x: format_to_openai_functions(
@@ -41,4 +40,3 @@ def get_openai_function_agent(tools, system_message, gpt_4: bool = False, azure:
         | llm_with_tools
         | OpenAIFunctionsAgentOutputParser()
     )
-    return agent

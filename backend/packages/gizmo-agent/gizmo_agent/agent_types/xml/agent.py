@@ -14,7 +14,7 @@ def get_xml_agent(tools, system_message):
     )
     llm_with_stop = model.bind(stop=["</tool_input>"])
 
-    agent = (
+    return (
         {
             "messages": lambda x: x["messages"],
             "agent_scratchpad": lambda x: format_xml(x["intermediate_steps"]),
@@ -23,4 +23,3 @@ def get_xml_agent(tools, system_message):
         | llm_with_stop
         | parse_output
     )
-    return agent
