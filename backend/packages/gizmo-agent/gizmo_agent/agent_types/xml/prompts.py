@@ -40,12 +40,11 @@ conversational_prompt = ChatPromptTemplate.from_messages(
 
 def parse_output(message):
     text = message.content
-    if "</tool>" in text:
-        tool, tool_input = text.split("</tool>")
-        _tool = tool.split("<tool>")[1]
-        _tool_input = tool_input.split("<tool_input>")[1]
-        if "</tool_input>" in _tool_input:
-            _tool_input = _tool_input.split("</tool_input>")[0]
-        return AgentAction(tool=_tool, tool_input=_tool_input, log=text)
-    else:
+    if "</tool>" not in text:
         return AgentFinish(return_values={"output": text}, log=text)
+    tool, tool_input = text.split("</tool>")
+    _tool = tool.split("<tool>")[1]
+    _tool_input = tool_input.split("<tool_input>")[1]
+    if "</tool_input>" in _tool_input:
+        _tool_input = _tool_input.split("</tool_input>")[0]
+    return AgentAction(tool=_tool, tool_input=_tool_input, log=text)
